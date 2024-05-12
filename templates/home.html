@@ -6,39 +6,13 @@
 
 <nav class="navbar bg-body-tertiary">
   <div class="container-fluid" style="justify-content: flex-start;">
-    <form class="d-flex" role="search" action="{{ url_for('search_courses') }}" method="GET">
-      <input class="form-control me-2" type="search" placeholder="Search Courses" aria-label="Search" name="query">
-      <button class="btn btn-outline-success" type="submit">Search</button>
-    </form>
-    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseModal">Add Course + </button>
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseModal">Add Course +</button>
     <a type="button" href="/"><i class="bi bi-arrow-clockwise" style="height: 100px; width:100px;"></i></a>
   </div>
 </nav>
 
 <!-- ADD COURSE MODAL -->
-<div class="modal" data-bs-config={backdrop:true} tabindex="-1" id="addCourseModal">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Add Course</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form action="/course" method="post">
-          <div class="mb-3">
-            <label for="course" class="form-label">Course Name</label>
-            <input type="text" class="form-control" id="course" name="course" required>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Add Course</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
+<!-- Your existing modal for adding a course -->
 
 {% if courses|length < 1 %}
 <h1>No Courses Found</h1>
@@ -57,28 +31,29 @@
       <td>{{ course.course_id }}</td>
       <td>{{ course.course_name }}</td>
       <td>
-        <a type="button" class="btn btn-warning btn-sm" href="/courses/edit/{{ course.course_code }}">Edit</a>
+        <!-- Edit button -->
+        <button type="button" class="btn btn-warning btn-sm edit-btn" data-bs-toggle="modal" data-bs-target="#editModal{{ course.course_id }}" data-course-id="{{ course.course_id }}" data-course-name="{{ course.course_name }}">Edit</button>
+        <!-- Delete button -->
         <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ course.course_id }}">Delete</button>
       </td>
     </tr>
 
-    <!-- CONFIRM DELETE MODAL -->
-    <div class="modal" data-bs-config={backdrop:true} tabindex="-1" id="deleteModal{{ course.course_id }}">
+    <!-- EDIT COURSE MODAL -->
+    <div class="modal" data-bs-config={backdrop:true} tabindex="-1" id="editModal{{ course.course_id }}">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Confirm Delete</h5>
+            <h5 class="modal-title">Edit Course</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p>Delete {{ course.course_id }} - {{ course.course_name }}?</p>
-          </div>
-          <div class="modal-footer">
-            <form action="/courses/{{ course.course_id }}/delete" method="post">
-              <button type="submit" class="btn btn-danger">Delete</button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <form id="editForm{{ course.course_id }}" onsubmit="updateCourse({{ course.course_id }})">
+                <div class="mb-3">
+                    <label for="edit_course{{ course.course_id }}" class="form-label">Course Name</label>
+                    <input type="text" class="form-control" id="edit_course{{ course.course_id }}" value="{{ course.course_name }}" required>
+                </div>
             </form>
-          </div>
+        </div>        
         </div>
       </div>
     </div>
@@ -88,3 +63,52 @@
 {% endif %}
 
 {% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Add event listener to all edit buttons
+    document.querySelectorAll('.edit-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const courseId = this.dataset.courseId;
+        const courseName = this.dataset.courseName;
+        populateEditModal(courseId, courseName);
+      });
+    });
+  });
+
+  // Function to populate the edit modal with current course details
+  function populateEditModal(courseId, courseName) {
+    document.getElementById('edit_course' + courseId).value = courseName;
+  }
+
+  // Function to handle course update
+  function updateCourse(courseId) {
+    event.preventDefault(); // Prevent default form submission
+
+    // Get updated course name
+    var updatedCourseName = document.getElementById('edit_course' + courseId).value;
+
+    // Send PUT request to update the course
+    fetch(`/course/${courseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          course_id: courseId,
+          course_name: updatedCourseName
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to update course.');
+        }
+        // Reload the page after successful update
+        location.reload();
+      })
+      .catch(error => console.error('Error:', error));
+  }
+</script>
+{% endblock %}
+
