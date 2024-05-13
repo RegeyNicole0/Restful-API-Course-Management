@@ -26,7 +26,6 @@ def spcall(query, param, commit=False):
         res = [("Error, " + str(sys.exc_info()[0]) + " " + str(sys.exc_info()[1]),)]
     return res
 
-
 # Print All Courses
 @app.route('/')
 def home():
@@ -61,9 +60,21 @@ def create_course():
         flash(f"Error: {str(e)}", "danger")
     return redirect(url_for('home'))
 
+#Update Course with Course ID
+@app.route('/course/<int:course_id>', methods=['PUT'])
+def update_course(course_id):
+    try:
+        data = request.get_json()
+        course = data.get('update_course')  # Use the correct key to extract course name
+        print(course, course_id)
+        if course:
+            res = spcall('update_course_by_id', (course_id, course), commit=True)
+            flash('Course updated successfully', 'success')
+            return jsonify({"status": "ok", 'message': 'course updated successfully'})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 #CURRENTLY WORKING ON
-    
 # Get Specific Course
 @app.route('/courses/<course_id>', methods=['GET'])
 def get_specific_course(course_id):
@@ -79,28 +90,5 @@ def get_specific_course(course_id):
         flash(f"Error: {str(e)}", "danger")
         return redirect(url_for('home'))
 
-
-#Update Course with Course ID
-@app.route('/course/<course_id>', methods=['PUT'])
-def update_course(course_id):
-    data = request.get_json()
-    course_id = data.get('course_id')
-    course_name = data.get ('course_name')
-    # print(course, course_id)
-    try:
-        # data = request.get_json()
-        # course = data.get('course')
-        # print(course, course_id)
-        if course_id:
-            res = spcall('update_course_by_id', (course_id, course_name), commit=True)
-            print (res)
-            return jsonify({"status": "ok", 
-                'message': 'course updated successfully'})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-
 if __name__ == '__main__':
     app.run(debug=True)
-
-
